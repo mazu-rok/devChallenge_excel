@@ -1,0 +1,41 @@
+version: "3.8"
+
+services:
+  devChallenge:
+    build:
+      context: .
+      dockerfile: setup/Dockerfile
+    image: dev-challenge
+    container_name: devChallenge
+    environment:
+      MONGO_HOST: devChallenge-mongodb
+    depends_on:
+      - devChallenge-mongodb
+    tty: true
+    ports:
+      - "8080:8080"
+    stdin_open: true
+    networks:
+      devChallenge-network:
+
+  devChallenge-mongodb:
+    build:
+      context: setup/mongo-docker
+    image: dev-challenge-mongodb
+    container_name: devChallenge-mongodb
+    tty: true
+    volumes:
+      - ./mongodb_data:/data/db
+    ports:
+      - "27017:27017"
+    stdin_open: true
+    networks:
+      devChallenge-network:
+
+volumes:
+  mongodb_data:
+
+networks:
+  devChallenge-network:
+    ipam:
+      driver: default
