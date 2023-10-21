@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
-@RequestMapping(path = "/api/v1")
+@RequestMapping(path = "/api/v1/{sheetName}")
 public class SheetController {
     private final SheetService sheetService;
 
@@ -22,7 +22,7 @@ public class SheetController {
         this.sheetService = sheetService;
     }
 
-    @PostMapping("/{sheetName}/{cellName}")
+    @PostMapping("/{cellName}")
     public ResponseEntity<?> addCell(@PathVariable String sheetName,
                                      @PathVariable String cellName,
                                      @RequestBody AddCellRequest request) {
@@ -39,7 +39,7 @@ public class SheetController {
         }
     }
 
-    @GetMapping("/{sheetName}")
+    @GetMapping
     public ResponseEntity<?> getSheet(@PathVariable String sheetName) {
         try {
             return ResponseEntity.status(HttpStatus.OK)
@@ -49,12 +49,12 @@ public class SheetController {
         }
     }
 
-    @GetMapping("/{sheetName}/{cellName}")
+    @GetMapping("/{cellName}")
     public ResponseEntity<?> getCell(@PathVariable String sheetName,
                                      @PathVariable String cellName) {
         try {
             return ResponseEntity.status(HttpStatus.OK)
-                    .body(sheetService.getCell(sheetName, cellName));
+                    .body(sheetService.getCellResponse(sheetName, cellName));
         } catch (NotFoundException e) {
             return ResponseEntity.notFound().build();
         }

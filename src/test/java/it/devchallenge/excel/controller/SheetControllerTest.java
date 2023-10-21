@@ -229,6 +229,40 @@ class SheetControllerTest {
     }
 
     @Test
+    void changeUsedInFormulasValueToIncompatible() {
+        // Add cells
+        var res = controller.addCell("devchallenge-xx", "var1", new AddCellRequest("1"));
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(res.getBody()).isNotNull();
+        assertThat(((CellResponse) res.getBody()).getValue()).isEqualTo("1");
+        assertThat(((CellResponse) res.getBody()).getResult()).isEqualTo("1");
+
+        res = controller.addCell("devchallenge-xx", "var2", new AddCellRequest("2"));
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(res.getBody()).isNotNull();
+        assertThat(((CellResponse) res.getBody()).getValue()).isEqualTo("2");
+        assertThat(((CellResponse) res.getBody()).getResult()).isEqualTo("2");
+
+        res = controller.addCell("devchallenge-xx", "var3", new AddCellRequest("=var1+var2"));
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(res.getBody()).isNotNull();
+        assertThat(((CellResponse)res.getBody()).getValue()).isEqualTo("=var1+var2");
+        assertThat(((CellResponse)res.getBody()).getResult()).isEqualTo("3");
+
+        res = controller.addCell("devchallenge-xx", "var4", new AddCellRequest("str"));
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(res.getBody()).isNotNull();
+        assertThat(((CellResponse)res.getBody()).getValue()).isEqualTo("str");
+        assertThat(((CellResponse)res.getBody()).getResult()).isEqualTo("str");
+
+        res = controller.addCell("devchallenge-xx", "var1", new AddCellRequest("=var4"));
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        assertThat(res.getBody()).isNotNull();
+        assertThat(((CellResponse) res.getBody()).getValue()).isEqualTo("=var4");
+        assertThat(((CellResponse) res.getBody()).getResult()).isEqualTo("ERROR");
+    }
+
+    @Test
     void getNotExistingCellTest() {
         var res = controller.getCell("devchallenge-xx", "var1");
 

@@ -12,7 +12,7 @@ public interface CellRepository extends MongoRepository<CellEntity, UUID> {
     Optional<CellEntity> findBySheetNameIgnoreCaseAndNameIgnoreCase(String sheetName, String cellName);
     List<CellEntity> findAllBySheetNameIgnoreCase(String sheetName);
 
-    @Query(value = "{'value': { $regex: '^=.*(" + "?0" + ").*', $options: 'i' }}", count = true)
-    long findByValueContainingInput(String input);
+    @Query(value = "{'value': { $regex: '^=.*(" + "?1" + ").*', $options: 'i' }, 'sheetName': {'$eq': '?0'}}")
+    List<CellEntity> findByValueContainingInput(String sheetName, String input);
     long countByValueIgnoreCase(String value);
 }

@@ -1,5 +1,9 @@
 # Application for [dev challenge](https://devchallenge.it) 
 
+## Result
+* Points: 250(384 max)
+* Qualified to: Final (threshold score for getting to the final 199)
+
 ## Start server
 ```shell
 docker-compose up
@@ -24,9 +28,9 @@ As a user, I want to have API service with exact endpoints:
 1) 201 if the value is OK
 2) 422 if the value is not OK e.g. new value leads to dependent formula ERROR compilation
    Examples:
-   - POST /api/v1/devchallenge-xx/var1 with {"value:": "0"}
+   - POST /api/v1/devchallenge-xx/var1 with {"value": "0"}
      - Response: {"value:": "0", "result": "0"}
-   - POST /api/v1/devchallenge-xx/var1 with {"value:": "1"}
+   - POST /api/v1/devchallenge-xx/var1 with {"value": "1"}
      - Response: {"value:": "1", "result": "1"}
    - POST /api/v1/devchallenge-xx/var2 with {"value": "2"}
      - Response: {"value:": "2", "result": "2"}
@@ -69,5 +73,4 @@ As a user, I want to have API service with exact endpoints:
 
 ## Next steps
 - Add more test cases to improve stability
-- Make a separate service to insert a variable value instead of its name
 - Improve calculation logic to increase performance

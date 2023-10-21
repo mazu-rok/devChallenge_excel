@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 import org.mariuszgromada.math.mxparser.License;
 import org.mockito.ArgumentCaptor;
 
-import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -95,7 +94,7 @@ public class SheetServiceTest {
 
         when(cellRepository.findBySheetNameIgnoreCaseAndNameIgnoreCase(anyString(), anyString())).thenReturn(Optional.empty());
         Exception exception = assertThrows(CalculationException.class, () -> sheetService.addCell(SHEET_NAME, CELL_NAME, cellValue));
-        assertThat(exception.getMessage()).isEqualTo("Failed to parse expression %s".formatted(cellValue));
+        assertThat(exception.getMessage()).isEqualTo("Failed to fill formula");
         verify(cellRepository, times(0)).save(any());
     }
 
@@ -105,7 +104,7 @@ public class SheetServiceTest {
 
         when(cellRepository.findBySheetNameIgnoreCaseAndNameIgnoreCase(anyString(), anyString())).thenReturn(Optional.empty());
         Exception exception = assertThrows(CalculationException.class, () -> sheetService.addCell(SHEET_NAME, CELL_NAME, cellValue));
-        assertThat(exception.getMessage()).isEqualTo("Recursive reference");
+        assertThat(exception.getMessage()).isEqualTo("Recursive formula");
 
         verify(cellRepository, times(0)).save(any());
     }
@@ -124,100 +123,8 @@ public class SheetServiceTest {
         assertThat(result.getResult()).isEqualTo(STRING_VALUE);
     }
 
-    /**
-     * Parse command tests
-     */
     @Test
-    public void parseCommandWithDigits() throws CalculationException, NotFoundException {
-        CellEntity cell = getCell("=1+2*3/4-(5+6)", CellEntity.CellType.FORMULA);
-
-        List<String> strings = sheetService.parseCommand(cell);
-        assertThat(strings).isEqualTo(List.of("1","+","2","*","3","/","4","-","(","5","+","6",")"));
-    }
-
-    @Test
-    public void parseCommandWithSpacesWithDigits() throws CalculationException, NotFoundException {
-        CellEntity cell = getCell("=1 +  2 *  3 / 4  -  ( 5 +  6 ) ", CellEntity.CellType.FORMULA);
-
-        List<String> strings = sheetService.parseCommand(cell);
-        assertThat(strings).isEqualTo(List.of("1","+","2","*","3","/","4","-","(","5","+","6",")"));
-    }
-
-    @Test
-    public void parseCommandWithCellNames() throws CalculationException, NotFoundException {
-        CellEntity cell = getCell("=cell1+cell1*(cell1+cell1)", CellEntity.CellType.FORMULA);
-        when(cellRepository.findBySheetNameIgnoreCaseAndNameIgnoreCase(cell.getSheetName(), "cell1"))
-                .thenReturn(Optional.ofNullable(getCell("9", CellEntity.CellType.DIGIT)));
-
-        List<String> strings = sheetService.parseCommand(cell);
-        assertThat(strings).isEqualTo(List.of("9","+","9","*","(","9","+","9",")"));
-    }
-
-    @Test
-    public void parseCommandWithSpacesWithCellNames() throws CalculationException, NotFoundException {
-        CellEntity cell = getCell("=cell1 + cell1 * (cell1 + cell1)", CellEntity.CellType.FORMULA);
-        when(cellRepository.findBySheetNameIgnoreCaseAndNameIgnoreCase(cell.getSheetName(), "cell1"))
-                .thenReturn(Optional.ofNullable(getCell("9", CellEntity.CellType.DIGIT)));
-
-        List<String> strings = sheetService.parseCommand(cell);
-        assertThat(strings).isEqualTo(List.of("9","+","9","*","(","9","+","9",")"));
-    }
-
-    /**
-     * Calculation tests
-     */
-    @Test
-    public void calculateDigitExpression() throws CalculationException {
-        CellEntity cell = getCell("=1+2*3/4-(5+6)", CellEntity.CellType.FORMULA);
-
-        String result = sheetService.calculateResult(cell);
-        assertThat(result).isEqualTo("-8.5");
-    }
-
-    @Test
-    public void calculateShouldReturnValueFromAnotherCell() throws CalculationException {
-        CellEntity anotherCell = getCell("cell1", "2", CellEntity.CellType.DIGIT);
-        CellEntity cell = getCell("=" + anotherCell.getName(), CellEntity.CellType.FORMULA);
-
-        when(cellRepository.findBySheetNameIgnoreCaseAndNameIgnoreCase(anotherCell.getSheetName(), anotherCell.getName()))
-                .thenReturn(Optional.of(anotherCell));
-
-        String result = sheetService.calculateResult(cell);
-        assertThat(result).isEqualTo(anotherCell.getValue());
-    }
-
-    @Test
-    public void calculateShouldSolveExpressionWithOtherCellsValue() throws CalculationException {
-        CellEntity anotherCell = getCell("cell1", "2", CellEntity.CellType.DIGIT);
-        CellEntity anotherCell2 = getCell("cell2", "3", CellEntity.CellType.DIGIT);
-        CellEntity cell = getCell("=%s+%s".formatted(anotherCell.getName(), anotherCell2.getName()), CellEntity.CellType.FORMULA);
-
-        when(cellRepository.findBySheetNameIgnoreCaseAndNameIgnoreCase(anotherCell.getSheetName(), anotherCell.getName()))
-                .thenReturn(Optional.of(anotherCell));
-        when(cellRepository.findBySheetNameIgnoreCaseAndNameIgnoreCase(anotherCell2.getSheetName(), anotherCell2.getName()))
-                .thenReturn(Optional.of(anotherCell2));
-
-        String result = sheetService.calculateResult(cell);
-        assertThat(result).isEqualTo("5");
-    }
-
-    @Test
-    public void calculateShouldReturnErrorForNotExistingCell() {
-        String cell2Name = "cell2";
-        CellEntity anotherCell = getCell("cell1", "2", CellEntity.CellType.DIGIT);
-        CellEntity cell = getCell("=%s+%s".formatted(anotherCell.getName(), cell2Name), CellEntity.CellType.FORMULA);
-
-        when(cellRepository.findBySheetNameIgnoreCaseAndNameIgnoreCase(anotherCell.getSheetName(), anotherCell.getName()))
-                .thenReturn(Optional.of(anotherCell));
-        when(cellRepository.findBySheetNameIgnoreCaseAndNameIgnoreCase(anotherCell.getSheetName(), cell2Name))
-                .thenReturn(Optional.empty());
-
-        Exception exception = assertThrows(CalculationException.class, () -> sheetService.calculateResult(cell));
-        assertThat(exception.getMessage()).isEqualTo("Failed to parse expression %s".formatted(cell.getValue()));
-    }
-
-    @Test
-    public void getResultForStringCell() throws CalculationException {
+    public void getResultForStringCell() throws CalculationException, NotFoundException {
         CellEntity cell = getCell("stringValue", CellEntity.CellType.STRING);
 
         String result = sheetService.getResult(cell);
@@ -225,7 +132,7 @@ public class SheetServiceTest {
     }
 
     @Test
-    public void getResultForDigitCell() throws CalculationException {
+    public void getResultForDigitCell() throws CalculationException, NotFoundException {
         CellEntity cell = getCell("1", CellEntity.CellType.STRING);
 
         String result = sheetService.getResult(cell);
@@ -244,5 +151,4 @@ public class SheetServiceTest {
                 .type(type)
                 .build();
     }
-
 }
